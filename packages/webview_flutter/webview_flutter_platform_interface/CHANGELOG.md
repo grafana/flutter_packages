@@ -1,5 +1,7 @@
-## NEXT
+## 2.16.0
 
+* Adds `PlatformWebViewController.addUserScript` and the `UserScriptInjectionTime`
+  enum for injecting user scripts at document start.
 * Updates minimum supported SDK version to Flutter 3.38/Dart 3.10.
 
 ## 2.15.1

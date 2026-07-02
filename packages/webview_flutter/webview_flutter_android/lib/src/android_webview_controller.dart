@@ -564,6 +564,35 @@ class AndroidWebViewController extends PlatformWebViewController {
   }
 
   @override
+  Future<void> addUserScript(
+    String source, {
+    UserScriptInjectionTime injectionTime = UserScriptInjectionTime.documentStart,
+  }) async {
+    switch (injectionTime) {
+      case UserScriptInjectionTime.documentStart:
+        final bool isSupported = await android_webview.WebViewFeature.isFeatureSupported(
+          WebViewFeatureConstants.documentStartScript,
+        );
+        if (!isSupported) {
+          throw UnimplementedError(
+            'Injecting a user script at document start requires the '
+            'DOCUMENT_START_SCRIPT WebView feature, which is not available on '
+            'this device.',
+          );
+        }
+        // '*' matches all origins so the script runs in every frame, mirroring
+        // the WKWebView implementation which injects into all frames.
+        await android_webview.WebViewCompat.addDocumentStartJavaScript(_webView, source, <String>[
+          '*',
+        ]);
+      case UserScriptInjectionTime.documentEnd:
+        throw UnimplementedError(
+          'Injecting a user script at document end is not supported on Android.',
+        );
+    }
+  }
+
+  @override
   Future<String?> getTitle() => _webView.getTitle();
 
   @override

@@ -69,3 +69,6 @@ gradlew.bat
 # AI related
 .agents/rules/personal-*
 .agents/skills/personal-*
+
+# Local-only dependency overrides for federated webview_flutter dev (do not commit)
+pubspec_overrides.yaml

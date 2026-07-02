@@ -9,7 +9,14 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path/path.dart' as path;
-import 'package:webview_flutter_platform_interface/webview_flutter_platform_interface.dart';
+// The platform interface's UserScriptInjectionTime collides by name with the
+// WebKit pigeon enum of the same name used throughout this file, so it is
+// hidden here and re-imported under a prefix for the addUserScript override.
+import 'package:webview_flutter_platform_interface/webview_flutter_platform_interface.dart'
+    hide UserScriptInjectionTime;
+import 'package:webview_flutter_platform_interface/webview_flutter_platform_interface.dart'
+    as platform_interface
+    show UserScriptInjectionTime;
 
 import 'common/platform_webview.dart';
 import 'common/weak_reference_utils.dart';
@@ -317,6 +324,11 @@ class WebKitWebViewController extends PlatformWebViewController {
   final Map<String, WebKitJavaScriptChannelParams> _javaScriptChannelParams =
       <String, WebKitJavaScriptChannelParams>{};
 
+  // App-added user scripts (via [addUserScript]). Retained so they can be
+  // re-injected after [_resetUserScripts] wipes all user scripts.
+  final List<({String source, platform_interface.UserScriptInjectionTime injectionTime})>
+  _userScripts = <({String source, platform_interface.UserScriptInjectionTime injectionTime})>[];
+
   bool _zoomEnabled = true;
   WebKitNavigationDelegate? _currentNavigationDelegate;
 
@@ -454,6 +466,42 @@ class WebKitWebViewController extends PlatformWebViewController {
       return;
     }
     await _resetUserScripts(removedJavaScriptChannel: javaScriptChannelName);
+  }
+
+  @override
+  Future<void> addUserScript(
+    String source, {
+    platform_interface.UserScriptInjectionTime injectionTime =
+        platform_interface.UserScriptInjectionTime.documentStart,
+  }) async {
+    _userScripts.add((source: source, injectionTime: injectionTime));
+    final WKUserContentController controller = await _webView.configuration
+        .getUserContentController();
+    await controller.addUserScript(_buildUserScript(source, injectionTime));
+  }
+
+  WKUserScript _buildUserScript(
+    String source,
+    platform_interface.UserScriptInjectionTime injectionTime,
+  ) {
+    return WKUserScript(
+      source: source,
+      injectionTime: _toWKInjectionTime(injectionTime),
+      // Match the JavaScript channel wrappers so injected scripts also run in
+      // subframes (e.g. iframes), which is required for patching network APIs.
+      isForMainFrameOnly: false,
+    );
+  }
+
+  UserScriptInjectionTime _toWKInjectionTime(
+    platform_interface.UserScriptInjectionTime injectionTime,
+  ) {
+    switch (injectionTime) {
+      case platform_interface.UserScriptInjectionTime.documentStart:
+        return UserScriptInjectionTime.atDocumentStart;
+      case platform_interface.UserScriptInjectionTime.documentEnd:
+        return UserScriptInjectionTime.atDocumentEnd;
+    }
   }
 
   @override
@@ -789,9 +837,9 @@ class WebKitWebViewController extends PlatformWebViewController {
 
   // WKWebView does not support removing a single user script, so all user
   // scripts and all message handlers are removed instead. And the JavaScript
-  // channels that shouldn't be removed are re-registered. Note that this
-  // workaround could interfere with exposing support for custom scripts from
-  // applications.
+  // channels that shouldn't be removed are re-registered. App-added user
+  // scripts (via [addUserScript]) are retained in [_userScripts] and
+  // re-injected here so this workaround does not silently drop them.
   Future<void> _resetUserScripts({String? removedJavaScriptChannel}) async {
     final WKUserContentController controller = await _webView.configuration
         .getUserContentController();
@@ -815,6 +863,11 @@ class WebKitWebViewController extends PlatformWebViewController {
       // Console logs are forwarded with a WKUserScript, so this adds it back
       // if a console callback was registered with [setOnConsoleMessage].
       if (_onConsoleMessageCallback != null) _injectConsoleOverride(),
+      // App-added user scripts were wiped by removeAllUserScripts above, so
+      // re-inject them.
+      for (final ({String source, platform_interface.UserScriptInjectionTime injectionTime}) script
+          in _userScripts)
+        controller.addUserScript(_buildUserScript(script.source, script.injectionTime)),
     ]);
   }
 
