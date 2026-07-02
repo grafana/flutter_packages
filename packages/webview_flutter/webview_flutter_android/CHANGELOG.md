@@ -1,3 +1,9 @@
+## 4.14.0
+
+* Implements `addUserScript` for injecting JavaScript at document start via
+  `WebViewCompat.addDocumentStartJavaScript` (requires the `DOCUMENT_START_SCRIPT`
+  WebView feature).
+
 ## 4.13.0
 
 * Adds new method for accessing a native `WebView` from a `FlutterPluginBinding`.

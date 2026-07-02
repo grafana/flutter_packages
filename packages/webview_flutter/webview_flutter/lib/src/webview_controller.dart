@@ -296,6 +296,22 @@ class WebViewController {
     return platform.removeJavaScriptChannel(javaScriptChannelName);
   }
 
+  /// Injects a user script that runs automatically on every page load.
+  ///
+  /// Unlike [runJavaScript], [source] is registered once and re-runs on each
+  /// subsequent navigation. With [UserScriptInjectionTime.documentStart] (the
+  /// default) it executes before the page's own scripts, which makes it
+  /// suitable for patching `window` APIs (e.g. `XMLHttpRequest`/`fetch`) before
+  /// the page issues its first request.
+  ///
+  /// [UserScriptInjectionTime.documentEnd] is not supported on Android.
+  Future<void> addUserScript(
+    String source, {
+    UserScriptInjectionTime injectionTime = UserScriptInjectionTime.documentStart,
+  }) {
+    return platform.addUserScript(source, injectionTime: injectionTime);
+  }
+
   /// The title of the currently loaded page.
   Future<String?> getTitle() {
     return platform.getTitle();

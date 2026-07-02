@@ -1014,3 +1014,19 @@ abstract class WebViewFeature {
   @static
   bool isFeatureSupported(String feature);
 }
+
+/// Compatibility version of `WebView`.
+///
+/// See https://developer.android.com/reference/kotlin/androidx/webkit/WebViewCompat.
+@ProxyApi(kotlinOptions: KotlinProxyApiOptions(fullClassName: 'androidx.webkit.WebViewCompat'))
+abstract class WebViewCompat {
+  /// Adds a JavaScript [script] that will be injected into every frame whose
+  /// origin matches [allowedOriginRules], before the document is loaded.
+  ///
+  /// Requires the `DOCUMENT_START_SCRIPT` feature; callers must first check
+  /// support via [WebViewFeature.isFeatureSupported].
+  ///
+  /// See https://developer.android.com/reference/androidx/webkit/WebViewCompat#addDocumentStartJavaScript(android.webkit.WebView,java.lang.String,java.util.Set%3Cjava.lang.String%3E).
+  @static
+  void addDocumentStartJavaScript(WebView webView, String script, List<String> allowedOriginRules);
+}

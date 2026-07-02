@@ -226,6 +226,18 @@ class MockPlatformWebViewController extends _i1.Mock implements _i4.PlatformWebV
           as _i5.Future<void>);
 
   @override
+  _i5.Future<void> addUserScript(
+    String? source, {
+    _i2.UserScriptInjectionTime? injectionTime = _i2.UserScriptInjectionTime.documentStart,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#addUserScript, [source], {#injectionTime: injectionTime}),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
+          )
+          as _i5.Future<void>);
+
+  @override
   _i5.Future<String?> getTitle() =>
       (super.noSuchMethod(
             Invocation.method(#getTitle, []),

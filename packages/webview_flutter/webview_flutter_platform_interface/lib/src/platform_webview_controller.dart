@@ -193,6 +193,23 @@ abstract class PlatformWebViewController extends PlatformInterface {
     throw UnimplementedError('removeJavaScriptChannel is not implemented on the current platform');
   }
 
+  /// Injects a user script that runs automatically on every page load.
+  ///
+  /// Unlike [runJavaScript], the [source] is registered once and re-runs for
+  /// each subsequent navigation, and (when [injectionTime] is
+  /// [UserScriptInjectionTime.documentStart]) executes before the page's own
+  /// scripts. This makes it suitable for patching `window` APIs (e.g.
+  /// `XMLHttpRequest`/`fetch`) ahead of the page's first request.
+  ///
+  /// [injectionTime] controls when the script runs.
+  /// [UserScriptInjectionTime.documentEnd] is not supported on Android.
+  Future<void> addUserScript(
+    String source, {
+    UserScriptInjectionTime injectionTime = UserScriptInjectionTime.documentStart,
+  }) {
+    throw UnimplementedError('addUserScript is not implemented on the current platform');
+  }
+
   /// Returns the title of the currently loaded page.
   Future<String?> getTitle() {
     throw UnimplementedError('getTitle is not implemented on the current platform');
