@@ -10,6 +10,26 @@ Check the [`packages`](./packages) directory to see all packages.
 
 These packages are also available on [pub](https://pub.dev/flutter/packages).
 
+## Grafana fork
+
+This repository is Grafana's internal fork of
+[`flutter/packages`](https://github.com/flutter/packages). It is consumed by
+the Grafana mobile app via a git ref (not from pub.dev), so the fork itself
+never publishes packages.
+
+The upstream release, publish, and batch-automation GitHub Actions workflows
+(`release.yml`, `reusable_release.yml`, `release_from_branches.yml`,
+`batch_release_pr.yml`, `go_router_batch.yml`, `sync_release_pr.yml`,
+`remove_cicd.yml`, and the `internals/install_flutter` action) were removed
+from this fork: they publish to pub.dev, depend on secrets that do not exist
+here, and target release branches this fork does not use. Package tests still
+run through LUCI/Cirrus via `.ci.yaml`, not GitHub Actions, so nothing is lost.
+
+Removing that dead automation also keeps Grafana's org security CI — in
+particular the [zizmor](https://docs.zizmor.sh/) GitHub Actions audit — green
+for all pull requests, since every high-severity finding originated in those
+inherited upstream workflows.
+
 ## Issues
 
 Please file any issues, bugs, or feature requests in the [main flutter
