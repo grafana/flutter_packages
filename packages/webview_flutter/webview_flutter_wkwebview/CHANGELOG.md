@@ -1,3 +1,9 @@
+## 3.27.0
+
+* Implements `addUserScript` for injecting JavaScript into all frames at document
+  start via `WKUserScript`, preserving injected scripts across internal user-script
+  resets.
+
 ## 3.26.0
 
 * Adds new method for accessing a native `WKWebView` from a `FlutterPluginRegistrar`.

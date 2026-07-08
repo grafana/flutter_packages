@@ -181,6 +181,23 @@ void main() {
     verify(mockPlatformWebViewController.removeJavaScriptChannel('channel'));
   });
 
+  test('addUserScript', () async {
+    final mockPlatformWebViewController = MockPlatformWebViewController();
+
+    final webViewController = WebViewController.fromPlatform(mockPlatformWebViewController);
+
+    await webViewController.addUserScript(
+      'window.x = 1;',
+      injectionTime: UserScriptInjectionTime.documentEnd,
+    );
+    verify(
+      mockPlatformWebViewController.addUserScript(
+        'window.x = 1;',
+        injectionTime: UserScriptInjectionTime.documentEnd,
+      ),
+    );
+  });
+
   test('getTitle', () async {
     final mockPlatformWebViewController = MockPlatformWebViewController();
     when(

@@ -60,6 +60,14 @@ void main() {
     expect(() => controller.loadFile(''), throwsUnimplementedError);
   });
 
+  test('Default implementation of addUserScript should throw unimplemented error', () {
+    final PlatformWebViewController controller = ExtendsPlatformWebViewController(
+      const PlatformWebViewControllerCreationParams(),
+    );
+
+    expect(() => controller.addUserScript('window.x = 1;'), throwsUnimplementedError);
+  });
+
   test('loadFileWithParams redirects to loadFile with correct path', () async {
     final controller = LoadFileSpyPlatformWebViewController(
       const PlatformWebViewControllerCreationParams(),

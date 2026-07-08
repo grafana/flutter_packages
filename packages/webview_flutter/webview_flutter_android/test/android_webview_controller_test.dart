@@ -96,6 +96,8 @@ void main() {
     android_webview.WebSettings? mockSettings,
     Future<bool> Function(String)? isWebViewFeatureSupported,
     Future<void> Function(android_webview.WebSettings, bool)? setPaymentRequestEnabled,
+    Future<void> Function(android_webview.WebView, String, List<String>)?
+    addDocumentStartJavaScript,
   }) {
     final android_webview.WebView nonNullMockWebView = mockWebView ?? MockWebView();
 
@@ -254,6 +256,8 @@ void main() {
         isWebViewFeatureSupported ?? (_) async => false;
     android_webview.PigeonOverrides.webSettingsCompat_setPaymentRequestEnabled =
         setPaymentRequestEnabled ?? (_, _) async {};
+    android_webview.PigeonOverrides.webViewCompat_addDocumentStartJavaScript =
+        addDocumentStartJavaScript ?? (_, _, _) async {};
 
     final creationParams = AndroidWebViewControllerCreationParams(
       androidWebStorage: mockWebStorage ?? MockWebStorage(),
@@ -1860,6 +1864,50 @@ void main() {
 
     expect(mockSettings, capturedSettings);
     expect(expectedEnabled, capturedEnabled);
+  });
+
+  test('addUserScript at documentStart injects when feature is supported', () async {
+    android_webview.WebView? capturedWebView;
+    String? capturedScript;
+    List<String>? capturedOriginRules;
+
+    final mockWebView = MockWebView();
+    final AndroidWebViewController controller = createControllerWithMocks(
+      mockWebView: mockWebView,
+      isWebViewFeatureSupported: (_) async => true,
+      addDocumentStartJavaScript:
+          (android_webview.WebView webView, String script, List<String> allowedOriginRules) async {
+            capturedWebView = webView;
+            capturedScript = script;
+            capturedOriginRules = allowedOriginRules;
+          },
+    );
+
+    await controller.addUserScript('window.x = 1;');
+
+    expect(capturedWebView, mockWebView);
+    expect(capturedScript, 'window.x = 1;');
+    expect(capturedOriginRules, <String>['*']);
+  });
+
+  test('addUserScript at documentStart throws when feature is unsupported', () async {
+    final AndroidWebViewController controller = createControllerWithMocks(
+      isWebViewFeatureSupported: (_) async => false,
+    );
+
+    await expectLater(() => controller.addUserScript('window.x = 1;'), throwsUnimplementedError);
+  });
+
+  test('addUserScript at documentEnd throws UnimplementedError', () async {
+    final AndroidWebViewController controller = createControllerWithMocks();
+
+    await expectLater(
+      () => controller.addUserScript(
+        'window.x = 1;',
+        injectionTime: UserScriptInjectionTime.documentEnd,
+      ),
+      throwsUnimplementedError,
+    );
   });
 
   test('setInsetsForWebContentToIgnore', () async {

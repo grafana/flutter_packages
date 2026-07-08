@@ -29,6 +29,7 @@ void main() {
       main_file.PlatformWebViewWidgetCreationParams;
       main_file.ProgressCallback;
       main_file.UrlChange;
+      main_file.UserScriptInjectionTime;
       main_file.WebViewOverScrollMode;
       main_file.WebViewPermissionResourceType;
       main_file.WebResourceError;

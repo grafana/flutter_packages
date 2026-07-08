@@ -1,3 +1,7 @@
+## 4.15.0
+
+* Adds `WebViewController.addUserScript` for injecting JavaScript at document start.
+
 ## 4.14.0
 
 * Add method to retrieve cookies. See `WebViewCookieManager.getCookies`.

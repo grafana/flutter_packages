@@ -10,7 +10,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
-import 'package:webview_flutter_platform_interface/webview_flutter_platform_interface.dart';
+// UserScriptInjectionTime collides with the WebKit pigeon enum of the same
+// name; hide it here and re-import under a prefix for addUserScript tests.
+import 'package:webview_flutter_platform_interface/webview_flutter_platform_interface.dart'
+    hide UserScriptInjectionTime;
+import 'package:webview_flutter_platform_interface/webview_flutter_platform_interface.dart'
+    as platform_interface
+    show UserScriptInjectionTime;
 import 'package:webview_flutter_wkwebview/src/common/web_kit.g.dart';
 import 'package:webview_flutter_wkwebview/src/common/webkit_constants.dart';
 import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
@@ -683,6 +689,67 @@ void main() {
         "meta.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, "
         "user-scalable=no';\n"
         "var head = document.getElementsByTagName('head')[0];head.appendChild(meta);",
+      );
+    });
+
+    test('addUserScript defaults to documentStart in all frames', () async {
+      final mockUserContentController = MockWKUserContentController();
+
+      final WebKitWebViewController controller = createControllerWithMocks(
+        mockUserContentController: mockUserContentController,
+      );
+
+      await controller.addUserScript('window.x = 1;');
+
+      final script =
+          verify(mockUserContentController.addUserScript(captureAny)).captured.single
+              as WKUserScript;
+      expect(script.source, 'window.x = 1;');
+      expect(script.injectionTime, UserScriptInjectionTime.atDocumentStart);
+      // Injected scripts must run in subframes too (e.g. iframes).
+      expect(script.isForMainFrameOnly, isFalse);
+    });
+
+    test('addUserScript at documentEnd', () async {
+      final mockUserContentController = MockWKUserContentController();
+
+      final WebKitWebViewController controller = createControllerWithMocks(
+        mockUserContentController: mockUserContentController,
+      );
+
+      await controller.addUserScript(
+        'window.y = 2;',
+        injectionTime: platform_interface.UserScriptInjectionTime.documentEnd,
+      );
+
+      final script =
+          verify(mockUserContentController.addUserScript(captureAny)).captured.single
+              as WKUserScript;
+      expect(script.injectionTime, UserScriptInjectionTime.atDocumentEnd);
+    });
+
+    test('user scripts are re-injected when user scripts are reset', () async {
+      final mockUserContentController = MockWKUserContentController();
+
+      final WebKitWebViewController controller = createControllerWithMocks(
+        mockUserContentController: mockUserContentController,
+      );
+
+      await controller.addJavaScriptChannel(
+        JavaScriptChannelParams(name: 'foo', onMessageReceived: (_) {}),
+      );
+      await controller.addUserScript('window.appScript = true;');
+
+      // Removing a JS channel wipes all user scripts via _resetUserScripts; the
+      // app-added script must be re-injected rather than silently dropped.
+      await controller.removeJavaScriptChannel('foo');
+
+      final List<String> addedSources = verify(
+        mockUserContentController.addUserScript(captureAny),
+      ).captured.cast<WKUserScript>().map((WKUserScript s) => s.source).toList();
+      expect(
+        addedSources.where((String s) => s == 'window.appScript = true;').length,
+        greaterThanOrEqualTo(2),
       );
     });
 
