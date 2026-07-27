@@ -5,8 +5,12 @@
 package io.flutter.plugins.webviewflutter;
 
 import android.graphics.Bitmap;
+import android.os.Build;
 import android.view.KeyEvent;
+import android.view.ViewGroup;
+import android.view.ViewParent;
 import android.webkit.HttpAuthHandler;
+import android.webkit.RenderProcessGoneDetail;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
@@ -14,6 +18,7 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 
 /**
  * Host api implementation for {@link WebViewClient}.
@@ -152,6 +157,28 @@ public class WebViewClientProxyApi extends PigeonApiWebViewClient {
         @NonNull android.webkit.WebView view, float oldScale, float newScale) {
       api.getPigeonRegistrar()
           .runOnMainThread(() -> api.onScaleChanged(this, view, oldScale, newScale, reply -> null));
+    }
+
+    @Override
+    @RequiresApi(api = Build.VERSION_CODES.O)
+    public boolean onRenderProcessGone(
+        @NonNull WebView view, @NonNull RenderProcessGoneDetail detail) {
+      final boolean didCrash = detail.didCrash();
+      api.getPigeonRegistrar()
+          .runOnMainThread(() -> api.onRenderProcessGone(this, view, didCrash, reply -> null));
+
+      // A `WebView` whose render process is gone is permanently unusable, so it is detached and
+      // destroyed. Detaching happens first because destroying a `WebView` that is still attached
+      // to a window is an error.
+      final ViewParent parent = view.getParent();
+      if (parent instanceof ViewGroup) {
+        ((ViewGroup) parent).removeView(view);
+      }
+      view.destroy();
+
+      // Returning true reports that the termination has been handled. When any `WebView`
+      // associated with the render process returns false, Android terminates the app process.
+      return true;
     }
 
     @Override

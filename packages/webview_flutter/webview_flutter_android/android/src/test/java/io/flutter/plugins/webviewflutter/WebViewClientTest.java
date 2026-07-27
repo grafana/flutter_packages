@@ -8,20 +8,24 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import android.net.http.SslError;
 import android.os.Message;
+import android.view.ViewGroup;
 import android.webkit.ClientCertRequest;
 import android.webkit.HttpAuthHandler;
+import android.webkit.RenderProcessGoneDetail;
 import android.webkit.SslErrorHandler;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebView;
 import io.flutter.plugins.webviewflutter.WebViewClientProxyApi.WebViewClientImpl;
 import org.junit.Test;
+import org.mockito.InOrder;
 
 public class WebViewClientTest {
   @Test
@@ -251,5 +255,58 @@ public class WebViewClientTest {
     verify(mockApi)
         .onScaleChanged(
             eq(instance), eq(view), eq((double) oldScale), eq((double) newScale), any());
+  }
+
+  @Test
+  public void onRenderProcessGone() {
+    final WebViewClientProxyApi mockApi = mock(WebViewClientProxyApi.class);
+    when(mockApi.getPigeonRegistrar()).thenReturn(new TestProxyApiRegistrar());
+
+    final WebViewClientImpl instance = new WebViewClientImpl(mockApi);
+    final android.webkit.WebView view = mock(WebView.class);
+    final RenderProcessGoneDetail detail = mock(RenderProcessGoneDetail.class);
+    when(detail.didCrash()).thenReturn(true);
+
+    // Returning true is what stops Android from terminating the app process.
+    assertTrue(instance.onRenderProcessGone(view, detail));
+
+    verify(mockApi).onRenderProcessGone(eq(instance), eq(view), eq(true), any());
+    verify(view).destroy();
+  }
+
+  @Test
+  public void onRenderProcessGoneWhenKilledBySystem() {
+    final WebViewClientProxyApi mockApi = mock(WebViewClientProxyApi.class);
+    when(mockApi.getPigeonRegistrar()).thenReturn(new TestProxyApiRegistrar());
+
+    final WebViewClientImpl instance = new WebViewClientImpl(mockApi);
+    final android.webkit.WebView view = mock(WebView.class);
+    final RenderProcessGoneDetail detail = mock(RenderProcessGoneDetail.class);
+    when(detail.didCrash()).thenReturn(false);
+
+    assertTrue(instance.onRenderProcessGone(view, detail));
+
+    verify(mockApi).onRenderProcessGone(eq(instance), eq(view), eq(false), any());
+  }
+
+  @Test
+  public void onRenderProcessGoneDetachesViewBeforeDestroyingIt() {
+    final WebViewClientProxyApi mockApi = mock(WebViewClientProxyApi.class);
+    when(mockApi.getPigeonRegistrar()).thenReturn(new TestProxyApiRegistrar());
+
+    final WebViewClientImpl instance = new WebViewClientImpl(mockApi);
+    final android.webkit.WebView view = mock(WebView.class);
+    final ViewGroup parent = mock(ViewGroup.class);
+    when(view.getParent()).thenReturn(parent);
+    final RenderProcessGoneDetail detail = mock(RenderProcessGoneDetail.class);
+    when(detail.didCrash()).thenReturn(true);
+
+    assertTrue(instance.onRenderProcessGone(view, detail));
+
+    // Destroying a `WebView` that is still attached to a window is an error, so
+    // it must be removed from its parent first.
+    final InOrder inOrder = inOrder(parent, view);
+    inOrder.verify(parent).removeView(view);
+    inOrder.verify(view).destroy();
   }
 }

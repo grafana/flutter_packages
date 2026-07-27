@@ -138,6 +138,7 @@ class PigeonOverrides {
     onReceivedSslError,
     void Function(WebViewClient pigeon_instance, WebView view, double oldScale, double newScale)?
     onScaleChanged,
+    void Function(WebViewClient pigeon_instance, WebView view, bool didCrash)? onRenderProcessGone,
   })?
   webViewClient_new;
 
@@ -2757,6 +2758,7 @@ class WebViewClient extends PigeonInternalProxyApiBaseClass {
     onReceivedSslError,
     void Function(WebViewClient pigeon_instance, WebView view, double oldScale, double newScale)?
     onScaleChanged,
+    void Function(WebViewClient pigeon_instance, WebView view, bool didCrash)? onRenderProcessGone,
   }) {
     if (PigeonOverrides.webViewClient_new != null) {
       return PigeonOverrides.webViewClient_new!(
@@ -2776,6 +2778,7 @@ class WebViewClient extends PigeonInternalProxyApiBaseClass {
         onReceivedLoginRequest: onReceivedLoginRequest,
         onReceivedSslError: onReceivedSslError,
         onScaleChanged: onScaleChanged,
+        onRenderProcessGone: onRenderProcessGone,
       );
     }
     return WebViewClient.pigeon_new(
@@ -2797,6 +2800,7 @@ class WebViewClient extends PigeonInternalProxyApiBaseClass {
       onReceivedLoginRequest: onReceivedLoginRequest,
       onReceivedSslError: onReceivedSslError,
       onScaleChanged: onScaleChanged,
+      onRenderProcessGone: onRenderProcessGone,
     );
   }
 
@@ -2820,6 +2824,7 @@ class WebViewClient extends PigeonInternalProxyApiBaseClass {
     this.onReceivedLoginRequest,
     this.onReceivedSslError,
     this.onScaleChanged,
+    this.onRenderProcessGone,
   }) {
     final int pigeonVar_instanceIdentifier = pigeon_instanceManager.addDartCreatedInstance(this);
     final _PigeonInternalProxyApiBaseCodec pigeonChannelCodec = _pigeonVar_codecWebViewClient;
@@ -2865,6 +2870,7 @@ class WebViewClient extends PigeonInternalProxyApiBaseClass {
     this.onReceivedLoginRequest,
     this.onReceivedSslError,
     this.onScaleChanged,
+    this.onRenderProcessGone,
   });
 
   late final _PigeonInternalProxyApiBaseCodec _pigeonVar_codecWebViewClient =
@@ -3269,6 +3275,40 @@ class WebViewClient extends PigeonInternalProxyApiBaseClass {
   )?
   onScaleChanged;
 
+  /// Notify the host application that the render process of the given WebView
+  /// has exited, either because it crashed or because it was killed by the
+  /// system.
+  ///
+  /// [didCrash] is `true` when the render process crashed and `false` when it
+  /// was killed by the system to reclaim memory.
+  ///
+  /// The `WebView` is permanently unusable once this is called, so the native
+  /// implementation detaches and destroys it before notifying Dart.
+  ///
+  /// Only called on Android 26 and above.
+  ///
+  /// See https://developer.android.com/reference/android/webkit/WebViewClient#onRenderProcessGone(android.webkit.WebView,%20android.webkit.RenderProcessGoneDetail).
+  ///
+  /// For the associated Native object to be automatically garbage collected,
+  /// it is required that the implementation of this `Function` doesn't have a
+  /// strong reference to the encapsulating class instance. When this `Function`
+  /// references a non-local variable, it is strongly recommended to access it
+  /// with a `WeakReference`:
+  ///
+  /// ```dart
+  /// final WeakReference weakMyVariable = WeakReference(myVariable);
+  /// final WebViewClient instance = WebViewClient(
+  ///  onRenderProcessGone: (WebViewClient pigeon_instance, ...) {
+  ///    print(weakMyVariable?.target);
+  ///  },
+  /// );
+  /// ```
+  ///
+  /// Alternatively, [PigeonInstanceManager.removeWeakReference] can be used to
+  /// release the associated Native object manually.
+  final void Function(WebViewClient pigeon_instance, WebView view, bool didCrash)?
+  onRenderProcessGone;
+
   static void pigeon_setUpMessageHandlers({
     bool pigeon_clearHandlers = false,
     BinaryMessenger? pigeon_binaryMessenger,
@@ -3338,6 +3378,7 @@ class WebViewClient extends PigeonInternalProxyApiBaseClass {
     onReceivedSslError,
     void Function(WebViewClient pigeon_instance, WebView view, double oldScale, double newScale)?
     onScaleChanged,
+    void Function(WebViewClient pigeon_instance, WebView view, bool didCrash)? onRenderProcessGone,
   }) {
     final _PigeonInternalProxyApiBaseCodec pigeonChannelCodec = _PigeonInternalProxyApiBaseCodec(
       pigeon_instanceManager ?? PigeonInstanceManager.instance,
@@ -3905,6 +3946,38 @@ class WebViewClient extends PigeonInternalProxyApiBaseClass {
         });
       }
     }
+
+    {
+      final pigeonVar_channel = BasicMessageChannel<Object?>(
+        'dev.flutter.pigeon.webview_flutter_android.WebViewClient.onRenderProcessGone',
+        pigeonChannelCodec,
+        binaryMessenger: binaryMessenger,
+      );
+      if (pigeon_clearHandlers) {
+        pigeonVar_channel.setMessageHandler(null);
+      } else {
+        pigeonVar_channel.setMessageHandler((Object? message) async {
+          final List<Object?> args = message! as List<Object?>;
+          final WebViewClient arg_pigeon_instance = args[0]! as WebViewClient;
+          final WebView arg_view = args[1]! as WebView;
+          final bool arg_didCrash = args[2]! as bool;
+          try {
+            (onRenderProcessGone ?? arg_pigeon_instance.onRenderProcessGone)?.call(
+              arg_pigeon_instance,
+              arg_view,
+              arg_didCrash,
+            );
+            return wrapResponse(empty: true);
+          } on PlatformException catch (e) {
+            return wrapResponse(error: e);
+          } catch (e) {
+            return wrapResponse(
+              error: PlatformException(code: 'error', message: e.toString()),
+            );
+          }
+        });
+      }
+    }
   }
 
   /// Sets the required synchronous return value for the Java method,
@@ -3956,6 +4029,7 @@ class WebViewClient extends PigeonInternalProxyApiBaseClass {
       onReceivedLoginRequest: onReceivedLoginRequest,
       onReceivedSslError: onReceivedSslError,
       onScaleChanged: onScaleChanged,
+      onRenderProcessGone: onRenderProcessGone,
     );
   }
 }

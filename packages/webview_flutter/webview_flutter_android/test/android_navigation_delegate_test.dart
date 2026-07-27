@@ -113,6 +113,52 @@ void main() {
       expect(callbackError.isForMainFrame, false);
     });
 
+    test('onWebResourceError from onRenderProcessGone when the render process crashed', () {
+      final androidNavigationDelegate = AndroidNavigationDelegate(_buildCreationParams());
+
+      late final WebResourceError callbackError;
+      androidNavigationDelegate.setOnWebResourceError(
+        (WebResourceError error) => callbackError = error,
+      );
+
+      CapturingWebViewClient.lastCreatedDelegate.onRenderProcessGone!(
+        CapturingWebViewClient(),
+        TestWebView(),
+        true,
+      );
+
+      // Reported as `webViewInvalidated` so that a handler written for the iOS
+      // process-termination error recovers on Android without changes.
+      expect(callbackError.errorType, WebResourceErrorType.webViewInvalidated);
+      expect(callbackError.isForMainFrame, true);
+      expect(callbackError.errorCode, AndroidWebResourceError.renderProcessGoneErrorCode);
+      expect((callbackError as AndroidWebResourceError).didCrash, true);
+    });
+
+    test(
+      'onWebResourceError from onRenderProcessGone when the system killed the render process',
+      () {
+        final androidNavigationDelegate = AndroidNavigationDelegate(_buildCreationParams());
+
+        late final WebResourceError callbackError;
+        androidNavigationDelegate.setOnWebResourceError(
+          (WebResourceError error) => callbackError = error,
+        );
+
+        CapturingWebViewClient.lastCreatedDelegate.onRenderProcessGone!(
+          CapturingWebViewClient(),
+          TestWebView(),
+          false,
+        );
+
+        // A system kill is recovered the same way as a crash, but is reported
+        // separately because it indicates memory pressure.
+        expect(callbackError.errorType, WebResourceErrorType.webViewInvalidated);
+        expect(callbackError.isForMainFrame, true);
+        expect((callbackError as AndroidWebResourceError).didCrash, false);
+      },
+    );
+
     test(
       'onNavigationRequest from requestLoading should not be called when loadUrlCallback is not specified',
       () {
@@ -667,6 +713,7 @@ class CapturingWebViewClient extends android_webview.WebViewClient {
     super.onReceivedLoginRequest,
     super.onReceivedSslError,
     super.onScaleChanged,
+    super.onRenderProcessGone,
   }) : super.pigeon_detached() {
     lastCreatedDelegate = this;
   }

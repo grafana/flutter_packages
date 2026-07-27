@@ -525,6 +525,21 @@ abstract class WebViewClient {
   /// changed.
   void Function(WebView view, double oldScale, double newScale)? onScaleChanged;
 
+  /// Notify the host application that the render process of the given WebView
+  /// has exited, either because it crashed or because it was killed by the
+  /// system.
+  ///
+  /// [didCrash] is `true` when the render process crashed and `false` when it
+  /// was killed by the system to reclaim memory.
+  ///
+  /// The `WebView` is permanently unusable once this is called, so the native
+  /// implementation detaches and destroys it before notifying Dart.
+  ///
+  /// Only called on Android 26 and above.
+  ///
+  /// See https://developer.android.com/reference/android/webkit/WebViewClient#onRenderProcessGone(android.webkit.WebView,%20android.webkit.RenderProcessGoneDetail).
+  void Function(WebView view, bool didCrash)? onRenderProcessGone;
+
   /// Sets the required synchronous return value for the Java method,
   /// `WebViewClient.shouldOverrideUrlLoading(...)`.
   ///
