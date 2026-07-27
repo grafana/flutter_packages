@@ -1313,11 +1313,49 @@ class AndroidWebResourceError extends WebResourceError {
     super.isForMainFrame,
     super.url,
   }) : failingUrl = url,
+       didCrash = null,
        super(errorType: _errorCodeToErrorType(errorCode));
+
+  /// Creates an error for a `WebView` whose render process has exited.
+  ///
+  /// This is reported as [WebResourceErrorType.webViewInvalidated] because the
+  /// `WebView` is permanently unusable and must be replaced. It mirrors how the
+  /// iOS implementation reports `webViewWebContentProcessDidTerminate`, so a
+  /// single `onWebResourceError` handler can recover on both platforms.
+  const AndroidWebResourceError._renderProcessGone({required bool didCrash})
+    : failingUrl = null,
+      didCrash = didCrash,
+      super(
+        errorCode: renderProcessGoneErrorCode,
+        description: didCrash
+            ? 'The WebView render process crashed.'
+            : 'The WebView render process was killed by the system.',
+        errorType: WebResourceErrorType.webViewInvalidated,
+        // Render process termination destroys the whole `WebView`, not an
+        // individual subframe.
+        isForMainFrame: true,
+      );
+
+  /// The [WebResourceError.errorCode] reported when a `WebView`'s render
+  /// process has exited.
+  ///
+  /// Android does not define an error code for render process termination, so
+  /// this value is specific to this package and intentionally does not overlap
+  /// with any `WebViewClient` error constant.
+  static const int renderProcessGoneErrorCode = -100;
 
   /// Gets the URL for which the failing resource request was made.
   @Deprecated('Please use `url`.')
   final String? failingUrl;
+
+  /// Whether the render process crashed, rather than being killed by the
+  /// system to reclaim memory.
+  ///
+  /// This is null for every error other than render process termination. A
+  /// value of `false` indicates the device was under memory pressure, which is
+  /// useful to distinguish diagnostically even though both cases recover the
+  /// same way.
+  final bool? didCrash;
 
   static WebResourceErrorType? _errorCodeToErrorType(int errorCode) {
     switch (errorCode) {
@@ -1469,6 +1507,12 @@ class AndroidNavigationDelegate extends PlatformNavigationDelegate {
               );
             }
           },
+      onRenderProcessGone: (_, android_webview.WebView webView, bool didCrash) {
+        final WebResourceErrorCallback? callback = weakThis.target?._onWebResourceError;
+        if (callback != null) {
+          callback(AndroidWebResourceError._renderProcessGone(didCrash: didCrash));
+        }
+      },
       requestLoading:
           (_, android_webview.WebView webView, android_webview.WebResourceRequest request) {
             weakThis.target?._handleNavigation(

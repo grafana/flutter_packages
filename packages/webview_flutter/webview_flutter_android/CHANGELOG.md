@@ -1,3 +1,11 @@
+## 4.15.0
+
+* Handles `WebViewClient.onRenderProcessGone` so that render process termination no longer
+  terminates the app process. The event is reported to
+  `PlatformNavigationDelegate.setOnWebResourceError` as an `AndroidWebResourceError` with
+  `WebResourceErrorType.webViewInvalidated`, matching how the iOS implementation reports
+  `webViewWebContentProcessDidTerminate`.
+
 ## 4.14.0
 
 * Implements `addUserScript` for injecting JavaScript at document start via

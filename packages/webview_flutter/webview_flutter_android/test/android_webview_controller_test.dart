@@ -244,6 +244,8 @@ void main() {
           onReceivedSslError,
           void Function(android_webview.WebViewClient, android_webview.WebView, double, double)?
           onScaleChanged,
+          void Function(android_webview.WebViewClient, android_webview.WebView, bool)?
+          onRenderProcessGone,
         }) => mockWebViewClient ?? MockWebViewClient();
     android_webview.PigeonOverrides.flutterAssetManager_instance =
         mockFlutterAssetManager ?? MockFlutterAssetManager();
@@ -2352,6 +2354,7 @@ class TestWebViewClient extends android_webview.WebViewClient {
     super.onReceivedLoginRequest,
     super.onReceivedSslError,
     super.onScaleChanged,
+    super.onRenderProcessGone,
   }) : super.pigeon_detached();
 }
 

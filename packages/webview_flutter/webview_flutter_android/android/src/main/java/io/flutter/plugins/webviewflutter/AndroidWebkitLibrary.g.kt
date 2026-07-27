@@ -3961,6 +3961,60 @@ abstract class PigeonApiWebViewClient(
       }
     }
   }
+
+  /**
+   * Notify the host application that the render process of the given WebView has exited, either
+   * because it crashed or because it was killed by the system.
+   *
+   * [didCrash] is `true` when the render process crashed and `false` when it was killed by the
+   * system to reclaim memory.
+   *
+   * The `WebView` is permanently unusable once this is called, so the native implementation
+   * detaches and destroys it before notifying Dart.
+   *
+   * Only called on Android 26 and above.
+   *
+   * See
+   * https://developer.android.com/reference/android/webkit/WebViewClient#onRenderProcessGone(android.webkit.WebView,%20android.webkit.RenderProcessGoneDetail).
+   */
+  fun onRenderProcessGone(
+      pigeon_instanceArg: android.webkit.WebViewClient,
+      viewArg: android.webkit.WebView,
+      didCrashArg: Boolean,
+      callback: (Result<Unit>) -> Unit
+  ) {
+    if (pigeonRegistrar.ignoreCallsToDart) {
+      callback(
+          Result.failure(
+              AndroidWebKitError("ignore-calls-error", "Calls to Dart are being ignored.", "")))
+      return
+    } else if (!pigeonRegistrar.instanceManager.containsInstance(pigeon_instanceArg)) {
+      callback(
+          Result.failure(
+              AndroidWebKitError(
+                  "missing-instance-error",
+                  "Callback to `WebViewClient.onRenderProcessGone` failed because native instance was not in the instance manager.",
+                  "")))
+      return
+    }
+    val binaryMessenger = pigeonRegistrar.binaryMessenger
+    val codec = pigeonRegistrar.codec
+    val channelName = "dev.flutter.pigeon.webview_flutter_android.WebViewClient.onRenderProcessGone"
+    val channel = BasicMessageChannel<Any?>(binaryMessenger, channelName, codec)
+    channel.send(listOf(pigeon_instanceArg, viewArg, didCrashArg)) {
+      if (it is List<*>) {
+        if (it.size > 1) {
+          callback(
+              Result.failure(
+                  AndroidWebKitError(it[0] as String, it[1] as String, it[2] as String?)))
+        } else {
+          callback(Result.success(Unit))
+        }
+      } else {
+        callback(Result.failure(AndroidWebkitLibraryPigeonUtils.createConnectionError(channelName)))
+      }
+    }
+  }
 }
 /**
  * Handles notifications that a file should be downloaded.
