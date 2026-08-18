@@ -155,3 +155,4 @@ dart run $REPO_ROOT/script/tool/bin/flutter_plugin_tools.dart update-release-inf
 - `--base-branch=origin/main`: Diffs against the `main` branch to find changed packages.
 
 If you update manually, follow semantic versioning and the repository's CHANGELOG format.
+- Security issues should be reported via [Grafana's security issue reporting page](https://grafana.com/legal/report-a-security-issue/) and not directly in this repository.
