@@ -1,3 +1,7 @@
+## 2.17.0
+
+* Adds optional HTTP method and header metadata to `NavigationRequest`.
+
 ## 2.16.0
 
 * Adds `PlatformWebViewController.addUserScript` and the `UserScriptInjectionTime`

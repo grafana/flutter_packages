@@ -1165,10 +1165,13 @@ class WebKitNavigationDelegate extends PlatformNavigationDelegate {
       },
       decidePolicyForNavigationAction: (_, _, WKNavigationAction action) async {
         if (weakThis.target?._onNavigationRequest != null) {
+          final Map<String, String>? headers = await action.request.getAllHttpHeaderFields();
           final NavigationDecision decision = await weakThis.target!._onNavigationRequest!(
             NavigationRequest(
               url: await action.request.getUrl() ?? '',
               isMainFrame: action.targetFrame?.isMainFrame ?? false,
+              method: await action.request.getHttpMethod(),
+              headers: headers == null ? null : Map<String, String>.unmodifiable(headers),
             ),
           );
           switch (decision) {

@@ -7,6 +7,28 @@ import 'package:webview_flutter_platform_interface/src/types/types.dart';
 
 void main() {
   group('types', () {
+    group('NavigationRequest', () {
+      test('defaults unavailable request metadata to null', () {
+        const request = NavigationRequest(url: 'https://flutter.dev', isMainFrame: true);
+
+        expect(request.method, isNull);
+        expect(request.headers, isNull);
+      });
+
+      test('preserves explicit request metadata without exposing it in diagnostics', () {
+        const request = NavigationRequest(
+          url: 'https://flutter.dev',
+          isMainFrame: true,
+          method: '',
+          headers: <String, String>{'Authorization': 'sensitive-value'},
+        );
+
+        expect(request.method, '');
+        expect(request.headers, <String, String>{'Authorization': 'sensitive-value'});
+        expect(request.toString(), isNot(contains('sensitive-value')));
+      });
+    });
+
     test('WebResourceRequest', () {
       final Uri uri = Uri.parse('https://www.google.com');
       final request = WebResourceRequest(uri: uri);

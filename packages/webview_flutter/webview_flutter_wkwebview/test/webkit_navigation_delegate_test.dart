@@ -338,53 +338,77 @@ void main() {
       expect(callbackError.isForMainFrame, true);
     });
 
-    test('onNavigationRequest from decidePolicyForNavigationAction', () async {
-      PigeonOverrides.wKNavigationDelegate_new = CapturingNavigationDelegate.new;
-      final webKitDelegate = WebKitNavigationDelegate(
-        const WebKitNavigationDelegateCreationParams(),
-      );
+    test('onNavigationRequest forwards GET, POST, and unavailable metadata', () async {
+      for (final testCase in <({String? method, Map<String, String>? headers})>[
+        (method: 'GET', headers: <String, String>{'X-Request': 'get'}),
+        (method: 'POST', headers: <String, String>{'X-Request': 'post'}),
+        (method: null, headers: null),
+      ]) {
+        PigeonOverrides.wKNavigationDelegate_new = CapturingNavigationDelegate.new;
+        final webKitDelegate = WebKitNavigationDelegate(
+          const WebKitNavigationDelegateCreationParams(),
+        );
 
-      late final NavigationRequest callbackRequest;
-      FutureOr<NavigationDecision> onNavigationRequest(NavigationRequest request) {
-        callbackRequest = request;
-        return NavigationDecision.navigate;
-      }
+        late final NavigationRequest callbackRequest;
+        await webKitDelegate.setOnNavigationRequest((NavigationRequest request) {
+          callbackRequest = request;
+          return NavigationDecision.navigate;
+        });
 
-      await webKitDelegate.setOnNavigationRequest(onNavigationRequest);
+        final mockRequest = MockURLRequest();
+        final Map<String, String>? nativeHeaders = testCase.headers;
+        final Map<String, String>? expectedHeaders = nativeHeaders == null
+            ? null
+            : Map<String, String>.from(nativeHeaders);
+        when(
+          mockRequest.getUrl(),
+        ).thenAnswer((_) => Future<String>.value('https://www.google.com'));
+        when(mockRequest.getHttpMethod()).thenAnswer((_) => Future<String?>.value(testCase.method));
+        when(
+          mockRequest.getAllHttpHeaderFields(),
+        ).thenAnswer((_) => Future<Map<String, String>?>.value(nativeHeaders));
 
-      final mockRequest = MockURLRequest();
-      when(mockRequest.getUrl()).thenAnswer((_) => Future<String>.value('https://www.google.com'));
-
-      expect(
-        await CapturingNavigationDelegate.lastCreatedDelegate.decidePolicyForNavigationAction(
-          WKNavigationDelegate.pigeon_detached(
-            decidePolicyForNavigationAction: (_, _, _) async {
-              return NavigationActionPolicy.cancel;
-            },
-            decidePolicyForNavigationResponse: (_, _, _) async {
-              return NavigationResponsePolicy.cancel;
-            },
-            didReceiveAuthenticationChallenge: (_, _, _) async {
-              return AuthenticationChallengeResponse.pigeon_detached(
-                disposition: UrlSessionAuthChallengeDisposition.performDefaultHandling,
-              );
-            },
-          ),
-          WKWebView.pigeon_detached(),
-          WKNavigationAction.pigeon_detached(
-            request: mockRequest,
-            targetFrame: WKFrameInfo.pigeon_detached(
-              isMainFrame: false,
-              request: URLRequest.pigeon_detached(),
+        expect(
+          await CapturingNavigationDelegate.lastCreatedDelegate.decidePolicyForNavigationAction(
+            WKNavigationDelegate.pigeon_detached(
+              decidePolicyForNavigationAction: (_, _, _) async {
+                return NavigationActionPolicy.cancel;
+              },
+              decidePolicyForNavigationResponse: (_, _, _) async {
+                return NavigationResponsePolicy.cancel;
+              },
+              didReceiveAuthenticationChallenge: (_, _, _) async {
+                return AuthenticationChallengeResponse.pigeon_detached(
+                  disposition: UrlSessionAuthChallengeDisposition.performDefaultHandling,
+                );
+              },
             ),
-            navigationType: NavigationType.linkActivated,
+            WKWebView.pigeon_detached(),
+            WKNavigationAction.pigeon_detached(
+              request: mockRequest,
+              targetFrame: WKFrameInfo.pigeon_detached(
+                isMainFrame: false,
+                request: URLRequest.pigeon_detached(),
+              ),
+              navigationType: NavigationType.linkActivated,
+            ),
           ),
-        ),
-        NavigationActionPolicy.allow,
-      );
+          NavigationActionPolicy.allow,
+        );
 
-      expect(callbackRequest.url, 'https://www.google.com');
-      expect(callbackRequest.isMainFrame, isFalse);
+        expect(callbackRequest.url, 'https://www.google.com');
+        expect(callbackRequest.isMainFrame, isFalse);
+        expect(callbackRequest.method, testCase.method);
+        expect(callbackRequest.headers, expectedHeaders);
+        if (nativeHeaders != null) {
+          nativeHeaders['X-Mutated'] = 'after-callback';
+          expect(callbackRequest.headers, expectedHeaders);
+          expect(
+            () => callbackRequest.headers!['X-Mutated'] = 'consumer-mutation',
+            throwsUnsupportedError,
+          );
+        }
+      }
     });
 
     test('onHttpBasicAuthRequest emits host and realm', () async {
