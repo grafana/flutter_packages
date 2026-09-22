@@ -1515,14 +1515,19 @@ class AndroidNavigationDelegate extends PlatformNavigationDelegate {
       },
       requestLoading:
           (_, android_webview.WebView webView, android_webview.WebResourceRequest request) {
+            final Map<String, String>? requestHeaders = request.requestHeaders?.map<String, String>(
+              (String? key, String? value) {
+                return MapEntry<String, String>(key!, value!);
+              },
+            );
             weakThis.target?._handleNavigation(
               request.url,
-              headers:
-                  request.requestHeaders?.map<String, String>((String? key, String? value) {
-                    return MapEntry<String, String>(key!, value!);
-                  }) ??
-                  <String, String>{},
+              headers: requestHeaders ?? <String, String>{},
               isForMainFrame: request.isForMainFrame,
+              method: request.method,
+              requestHeaders: requestHeaders == null
+                  ? null
+                  : Map<String, String>.unmodifiable(requestHeaders),
             );
           },
       urlLoading: (_, android_webview.WebView webView, String url) {
@@ -1642,6 +1647,8 @@ class AndroidNavigationDelegate extends PlatformNavigationDelegate {
     String url, {
     required bool isForMainFrame,
     Map<String, String> headers = const <String, String>{},
+    String? method,
+    Map<String, String>? requestHeaders,
   }) {
     final LoadRequestCallback? onLoadRequest = _onLoadRequest;
     final NavigationRequestCallback? onNavigationRequest = _onNavigationRequest;
@@ -1653,7 +1660,12 @@ class AndroidNavigationDelegate extends PlatformNavigationDelegate {
     }
 
     final FutureOr<NavigationDecision> returnValue = onNavigationRequest(
-      NavigationRequest(url: url, isMainFrame: isForMainFrame),
+      NavigationRequest(
+        url: url,
+        isMainFrame: isForMainFrame,
+        method: method,
+        headers: requestHeaders,
+      ),
     );
 
     if (returnValue is NavigationDecision && returnValue == NavigationDecision.navigate) {

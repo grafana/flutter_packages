@@ -1,3 +1,7 @@
+## 4.16.0
+
+* Adds HTTP method and header metadata to structured navigation requests.
+
 ## 4.15.0
 
 * Handles `WebViewClient.onRenderProcessGone` so that render process termination no longer

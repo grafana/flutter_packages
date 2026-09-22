@@ -1,3 +1,7 @@
+## 4.16.0
+
+* Adds optional HTTP method and header metadata to `NavigationRequest`.
+
 ## 4.15.0
 
 * Adds `WebViewController.addUserScript` for injecting JavaScript at document start.

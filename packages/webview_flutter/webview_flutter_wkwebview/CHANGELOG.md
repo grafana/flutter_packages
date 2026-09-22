@@ -1,3 +1,7 @@
+## 3.28.0
+
+* Adds HTTP method and header metadata to navigation requests when available.
+
 ## 3.27.0
 
 * Implements `addUserScript` for injecting JavaScript into all frames at document

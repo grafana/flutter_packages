@@ -191,6 +191,7 @@ void main() {
       'onNavigationRequest from requestLoading should be called when request is for main frame',
       () {
         final androidNavigationDelegate = AndroidNavigationDelegate(_buildCreationParams());
+        final nativeHeaders = <String, String>{'X-Mock': 'mocking'};
 
         NavigationRequest? callbackNavigationRequest;
         androidNavigationDelegate.setOnNavigationRequest((NavigationRequest navigationRequest) {
@@ -209,11 +210,19 @@ void main() {
             isRedirect: true,
             hasGesture: true,
             method: 'GET',
-            requestHeaders: const <String, String>{'X-Mock': 'mocking'},
+            requestHeaders: nativeHeaders,
           ),
         );
 
         expect(callbackNavigationRequest, isNotNull);
+        expect(callbackNavigationRequest!.method, 'GET');
+        expect(callbackNavigationRequest!.headers, <String, String>{'X-Mock': 'mocking'});
+        nativeHeaders['X-Mutated'] = 'after-callback';
+        expect(callbackNavigationRequest!.headers, <String, String>{'X-Mock': 'mocking'});
+        expect(
+          () => callbackNavigationRequest!.headers!['X-Mutated'] = 'consumer-mutation',
+          throwsUnsupportedError,
+        );
       },
     );
 
@@ -338,7 +347,7 @@ void main() {
             isForMainFrame: true,
             isRedirect: true,
             hasGesture: true,
-            method: 'GET',
+            method: 'POST',
             requestHeaders: const <String, String>{'X-Mock': 'mocking'},
           ),
         );
@@ -347,6 +356,8 @@ void main() {
         expect(loadRequestParams.headers, <String, String>{'X-Mock': 'mocking'});
         expect(callbackNavigationRequest.isMainFrame, true);
         expect(callbackNavigationRequest.url, 'https://www.google.com');
+        expect(callbackNavigationRequest.method, 'POST');
+        expect(callbackNavigationRequest.headers, <String, String>{'X-Mock': 'mocking'});
         expect(completer.isCompleted, true);
       },
     );
@@ -418,6 +429,8 @@ void main() {
 
         expect(callbackNavigationRequest.isMainFrame, true);
         expect(callbackNavigationRequest.url, 'https://www.google.com');
+        expect(callbackNavigationRequest.method, isNull);
+        expect(callbackNavigationRequest.headers, isNull);
         expect(completer.isCompleted, false);
       },
     );
