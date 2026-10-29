@@ -50,7 +50,7 @@ flutter {
 
 dependencies {
     implementation("com.google.android.gms:play-services-auth:16.0.1")
-    testImplementation("junit:junit:4.12")
+    testImplementation("junit:junit:4.13.1")
     androidTestImplementation("androidx.test:runner:1.2.0")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.2.0")
     api("androidx.test:core:1.4.0")
