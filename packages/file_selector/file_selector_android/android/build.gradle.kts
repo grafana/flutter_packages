@@ -2,7 +2,7 @@ group = "dev.flutter.packages.file_selector_android"
 version = "1.0"
 
 buildscript {
-    val kotlinVersion = "2.3.0"
+    val kotlinVersion = "2.4.20"
     repositories {
         google()
         mavenCentral()
