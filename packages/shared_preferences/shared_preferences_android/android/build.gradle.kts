@@ -2,7 +2,7 @@ group = "io.flutter.plugins.sharedpreferences"
 version = "1.0-SNAPSHOT"
 
 buildscript {
-    val kotlinVersion = "2.3.0"
+    val kotlinVersion = "2.4.20"
     repositories {
         google()
         mavenCentral()
