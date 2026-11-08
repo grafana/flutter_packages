@@ -44,7 +44,7 @@ flutter {
 dependencies {
     testImplementation("androidx.test.ext:junit:1.2.1")
     testImplementation("com.google.truth:truth:1.1.3")
-    testImplementation("junit:junit:4.13")
+    testImplementation("junit:junit:4.13.1")
     testImplementation("org.robolectric:robolectric:4.16")
     testImplementation("org.mockito:mockito-core:5.17.0")
     androidTestImplementation("androidx.test:runner:1.1.1")
